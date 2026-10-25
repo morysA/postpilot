@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PostPilot — Create Once. Publish Everywhere.</title>
+<style>
+:root{--bg:#f5f7fb;--panel:#fff;--ink:#172033;--muted:#6d778b;--line:#e5e9f2;--accent:#6558e8;--accent2:#eeeaff;--good:#16845b;--warn:#a45c08}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+button,input,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;font-weight:650}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}.sidebar{background:#15182a;color:#fff;padding:24px 16px;display:flex;flex-direction:column;gap:24px}.brand{font-size:22px;font-weight:850;letter-spacing:-.7px;padding:0 10px}.brand span{color:#a99fff}.tag{font-size:11px;color:#adb2c8;padding:0 10px;margin-top:-20px}.nav{display:grid;gap:7px}.nav button{background:transparent;color:#c5c9d9;text-align:left;font-weight:550}.nav button.active,.nav button:hover{background:#292d46;color:#fff}.sidebar-bottom{margin-top:auto;color:#aeb4c9;font-size:12px;padding:10px}
+main{padding:28px clamp(16px,3vw,40px);max-width:1500px;width:100%;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:25px}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);font-weight:800}.top h1{margin:3px 0;font-size:28px;letter-spacing:-.8px}.muted{color:var(--muted)}.primary{background:var(--accent);color:#fff}.secondary{background:#f0f1f7;color:#333b50}.danger{background:#fff0f0;color:#a12c2c}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 4px 18px #19234a06}.stat{font-size:29px;font-weight:800;margin-top:8px}.stat-label{font-size:13px;color:var(--muted)}.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(270px,.65fr);gap:18px}.panel h2{font-size:17px;margin:0 0 5px}.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px}.field{display:grid;gap:7px;margin-bottom:16px}.field label{font-size:13px;font-weight:700}.field input,.field textarea{width:100%;border:1px solid #dce1ec;border-radius:10px;padding:11px 12px;background:#fff;outline:none}.field input:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px #6558e81c}.field textarea{min-height:150px;resize:vertical}.platforms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.platform{display:flex;align-items:center;gap:9px;border:1px solid var(--line);padding:10px;border-radius:11px;cursor:pointer;font-size:13px}.platform input{accent-color:var(--accent)}.platform small{display:block;color:var(--muted)}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.notice{border-radius:11px;background:#fff8e8;border:1px solid #f2dfb7;color:#765019;padding:12px 14px;font-size:13px;margin-bottom:18px}.badge{display:inline-block;border-radius:999px;background:#f0f1f7;color:#555f73;padding:4px 9px;font-size:11px;font-weight:750}.badge.good{background:#e3f7ee;color:#116745}.badge.warn{background:#fff2d9;color:#8a5208}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}.row-title{font-weight:700}.row-sub{font-size:12px;color:var(--muted)}.empty{padding:28px 12px;text-align:center;color:var(--muted)}.hidden{display:none!important}.preview{border:1px dashed #cbd2e1;border-radius:12px;min-height:110px;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;color:var(--muted);overflow:hidden}.preview img,.preview video{max-width:100%;max-height:230px;border-radius:8px}.small-btn{padding:6px 9px;font-size:12px}.platform-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.platform-card{border:1px solid var(--line);border-radius:12px;padding:13px}.platform-card strong{display:block}.platform-card span{font-size:12px;color:var(--muted)}.footer-note{font-size:12px;color:var(--muted);margin-top:16px}
+@media(max-width:900px){.app{grid-template-columns:1fr}.sidebar{padding:14px;gap:10px}.brand{padding:0}.tag{margin:0;padding:0}.nav{grid-template-columns:repeat(3,1fr)}.nav button{text-align:center;padding:9px 6px;font-size:12px}.sidebar-bottom{display:none}.grid{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}}
+@media(max-width:480px){main{padding:18px 12px}.top h1{font-size:23px}.platforms,.platform-cards{grid-template-columns:1fr}.grid{gap:8px}.card,.panel{padding:14px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">Post<span>Pilot</span></div><div class="tag">CREATE ONCE. PUBLISH EVERYWHERE.</div>
+  <nav class="nav" id="nav">
+    <button class="active" data-page="dashboard">◫ &nbsp; Overview</button>
+    <button data-page="compose">✎ &nbsp; Create Post</button>
+    <button data-page="library">▧ &nbsp; Content Library</button>
+    <button data-page="history">◷ &nbsp; Publishing History</button>
+    <button data-page="accounts">◎ &nbsp; Connected Accounts</button>
+    <button data-page="settings">⚙ &nbsp; Settings</button>
+  </nav>
+  <div class="sidebar-bottom">Starter edition · Local browser storage<br>Social publishing integrations not connected</div>
+</aside>
+<main>
+  <header class="top"><div><div class="eyebrow">Social publishing workspace</div><h1 id="page-title">Overview</h1><div class="muted" id="page-subtitle">Your content workflow, all in one place.</div></div><button class="primary" id="top-create">＋ Create post</button></header>
+  <section id="dashboard-page">
+    <div class="grid">
+      <div class="card"><div class="stat-label">Drafts</div><div class="stat" id="stat-drafts">0</div></div>
+      <div class="card"><div class="stat-label">Publishing jobs</div><div class="stat" id="stat-jobs">0</div></div>
+      <div class="card"><div class="stat-label">Published</div><div class="stat" id="stat-published">0</div></div>
+      <div class="card"><div class="stat-label">Connected accounts</div><div class="stat">0 <span style="font-size:12px;color:#6d778b">of 8</span></div></div>
+    </div>
+    <div class="notice"><strong>Setup status:</strong> This starter saves drafts in your browser. Real social account connections and publishing APIs have not been configured. Nothing is published to your social accounts yet.</div>
+    <div class="layout">
+      <div class="panel"><div class="panel-head"><div><h2>Recent content</h2><div class="muted">Your latest drafts and publishing activity</div></div><button class="secondary small-btn" data-go="history">View history</button></div><div id="recent-list"></div></div>
+      <div class="panel"><h2>Quick start</h2><p class="muted">Create a post once, select your target platforms, and save it as a draft while we set up official integrations.</p><button class="primary" data-go="compose">Create your first post</button><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h2>Supported platform targets</h2><p class="muted">Facebook · Instagram · TikTok · YouTube · WhatsApp Business · LinkedIn · Threads · X</p></div>
+    </div>
+  </section>
+  <section id="compose-page" class="hidden">
+    <div class="notice"><strong>Draft mode:</strong> Save drafts now. The Publish Everywhere button will explain that platform authorization is required; it will not fake a successful post.</div>
+    <div class="layout">
+      <div class="panel">
+        <div class="field"><label for="caption">Post caption</label><textarea id="caption" placeholder="What would you like to share?"></textarea></div>
+        <div class="field"><label for="hashtags">Hashtags (optional)</label><input id="hashtags" placeholder="#YourBrand #NewPost"></div>
+        <div class="field"><label for="media">Upload image or video (optional)</label><input id="media" type="file" accept="image/*,video/*"><div class="preview" id="media-preview">Media preview will appear here</div></div>
+        <div class="field"><label>Choose platforms</label><div class="platforms" id="platform-select"></div></div>
+        <div class="actions"><button class="primary" id="save-draft">Save draft</button><button class="secondary" id="publish">Publish Everywhere</button><button class="secondary hidden" id="cancel-edit">Cancel edit</button></div>
+        <div class="footer-note" id="compose-feedback" aria-live="polite"></div>
+      </div>
+      <div class="panel"><h2>Post checklist</h2><p class="muted">Before publishing, check that your caption and media suit each platform.</p><div class="row"><div><div class="row-title">Caption</div><div class="row-sub">Write a clear message</div></div><span id="caption-check" class="badge">Needed</span></div><div class="row"><div><div class="row-title">Target platforms</div><div class="row-sub">Select one or more</div></div><span id="platform-check" class="badge">Needed</span></div><div class="row"><div><div class="row-title">Account connections</div><div class="row-sub">Official authorization required</div></div><span class="badge warn">Not connected</span></div><div class="footer-note">WhatsApp Business is treated as a separate messaging workflow, not a public-feed post.</div></div>
+    </div>
+  </section>
+  <section id="library-page" class="hidden"><div class="panel"><div class="panel-head"><div><h2>Content Library</h2><div class="muted">Saved captions and drafts in this browser</div></div><button class="primary" data-go="compose">＋ New content</button></div><div id="library-list"></div></div></section>
+  <section id="history-page" class="hidden"><div class="panel"><div class="panel-head"><div><h2>Publishing History</h2><div class="muted">Drafts and attempted publishing workflows</div></div><select id="history-filter" class="secondary"><option value="all">All statuses</option><option value="draft">Drafts</option><option value="blocked">Not connected</option></select></div><div id="history-list"></div></div></section>
+  <section id="accounts-page" class="hidden"><div class="panel"><h2>Social account connections</h2><p class="muted">These are platform targets only. No account is connected in this starter build.</p><div class="platform-cards" id="account-cards"></div><div class="footer-note">To activate publishing, we will configure each platform's official developer application, permissions, callback URLs, and secure server-side token storage.</div></div></section>
+  <section id="settings-page" class="hidden"><div class="panel"><h2>Workspace settings</h2><div class="field" style="margin-top:16px"><label for="workspace-name">Workspace name</label><input id="workspace-name" value="My PostPilot Workspace"></div><button class="primary" id="save-settings">Save settings</button><p class="footer-note" id="settings-feedback">Settings are stored locally in this browser.</p><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h2>Current build limitations</h2><p class="muted">This is a local starter, not a deployed multi-user SaaS. No OAuth, live publishing, cloud database, scheduling worker, or billing is configured.</p></div></section>
+</main>
+</div>
+<script>
+const PLATFORMS = [
+ {id:'facebook',name:'Facebook Pages',icon:'f',desc:'Page publishing'},
+ {id:'instagram',name:'Instagram',icon:'◎',desc:'Professional accounts'},
+ {id:'tiktok',name:'TikTok',icon:'♪',desc:'Video publishing'},
+ {id:'youtube',name:'YouTube',icon:'▶',desc:'Videos and Shorts'},
+ {id:'whatsapp',name:'WhatsApp Business',icon:'◉',desc:'Business messaging'},
+ {id:'linkedin',name:'LinkedIn',icon:'in',desc:'Profile or organization'},
+ {id:'threads',name:'Threads',icon:'@',desc:'Text and media posts'},
+ {id:'x',name:'X',icon:'𝕏',desc:'Posts and media'}
+];
+const $ = s => document.querySelector(s);
+const load = (k, d) => {try{return JSON.parse(localStorage.getItem('postpilot_'+k)) ?? d}catch{return d}};
+const store = (k,v) => localStorage.setItem('postpilot_'+k,JSON.stringify(v));
+let drafts=load('drafts',[]), jobs=load('jobs',[]), mediaData='', mediaName='', editingId=null;
+function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function dateLabel(d){return new Date(d).toLocaleString();}
+function nav(page){document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));$('#'+page+'-page').classList.remove('hidden');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));const names={dashboard:['Overview','Your content workflow, all in one place.'],compose:['Create Post','Compose once and prepare content for selected platforms.'],library:['Content Library','Reuse your saved content.'],history:['Publishing History','Review drafts and publishing workflow status.'],accounts:['Connected Accounts','Manage platform integrations.'],settings:['Settings','Configure your workspace.']};$('#page-title').textContent=names[page][0];$('#page-subtitle').textContent=names[page][1];render();}
+function renderPlatforms(){ $('#platform-select').innerHTML=PLATFORMS.map(p=>`<label class="platform"><input type="checkbox" value="${p.id}"><span><strong>${p.name}</strong><small>${p.desc}</small></span></label>`).join(''); $('#account-cards').innerHTML=PLATFORMS.map(p=>`<div class="platform-card"><strong>${p.icon} &nbsp; ${p.name}</strong><span>${p.desc}</span><div style="margin-top:10px"><span class="badge warn">Not connected</span></div></div>`).join('');}
+function resetForm(){editingId=null;$('#caption').value='';$('#hashtags').value='';$('#media').value='';mediaData='';mediaName='';$('#media-preview').textContent='Media preview will appear here';document.querySelectorAll('#platform-select input').forEach(x=>x.checked=false);$('#cancel-edit').classList.add('hidden');$('#compose-feedback').textContent='';updateChecks();}
+function updateChecks(){let cap=$('#caption').value.trim();let selected=[...document.querySelectorAll('#platform-select input:checked')];$('#caption-check').textContent=cap?'Ready':'Needed';$('#caption-check').className='badge '+(cap?'good':'');$('#platform-check').textContent=selected.length?selected.length+' selected':'Needed';$('#platform-check').className='badge '+(selected.length?'good':'');}
+function editDraft(id){let d=drafts.find(x=>x.id===id);if(!d)return;nav('compose');editingId=id;$('#caption').value=d.caption;$('#hashtags').value=d.hashtags||'';mediaData=d.mediaData||'';mediaName=d.mediaName||'';$('#media-preview').innerHTML=mediaData?(d.mediaType?.startsWith('video')?`<video controls src="${mediaData}"></video>`:`<img src="${mediaData}" alt="Selected media preview">`):'Media preview will appear here';document.querySelectorAll('#platform-select input').forEach(x=>x.checked=(d.platforms||[]).includes(x.value));$('#cancel-edit').classList.remove('hidden');updateChecks();}
+function deleteDraft(id){if(!confirm('Delete this draft?'))return;drafts=drafts.filter(d=>d.id!==id);store('drafts',drafts);render();}
+function contentRow(d){let platforms=(d.platforms||[]).map(id=>PLATFORMS.find(p=>p.id===id)?.name||id).join(', ')||'No platforms selected';return `<div class="row"><div style="min-width:0"><div class="row-title">${esc((d.caption||'Untitled post').slice(0,85))}</div><div class="row-sub">${esc(platforms)} · ${dateLabel(d.updatedAt||d.createdAt)}</div></div><div style="display:flex;gap:6px;flex-shrink:0"><button class="secondary small-btn" onclick="editDraft('${d.id}')">Edit</button><button class="danger small-btn" onclick="deleteDraft('${d.id}')">Delete</button></div></div>`}
+function render(){ $('#stat-drafts').textContent=drafts.length;$('#stat-jobs').textContent=jobs.length;$('#stat-published').textContent=0;let recent=[...drafts].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,5);$('#recent-list').innerHTML=recent.length?recent.map(contentRow).join(''):'<div class="empty">No content yet. Create a post to get started.</div>';$('#library-list').innerHTML=drafts.length?drafts.map(contentRow).join(''):'<div class="empty">Your saved content will appear here.</div>';let f=$('#history-filter')?.value||'all';let all=[...drafts.map(d=>({...d,status:'draft'})),...jobs.map(j=>({...j,status:'blocked'}))].filter(x=>f==='all'||x.status===f);$('#history-list').innerHTML=all.length?all.map(x=>`<div class="row"><div><div class="row-title">${esc((x.caption||'Publishing job').slice(0,90))}</div><div class="row-sub">${esc((x.platforms||[]).map(id=>PLATFORMS.find(p=>p.id===id)?.name||id).join(', '))} · ${dateLabel(x.updatedAt||x.createdAt)}</div></div><span class="badge ${x.status==='draft'?'':'warn'}">${x.status==='draft'?'Draft':'Not connected'}</span></div>`).join(''):'<div class="empty">Nothing to show for this filter.</div>';}
+function saveDraft(){let caption=$('#caption').value.trim(),hashtags=$('#hashtags').value.trim(),platforms=[...document.querySelectorAll('#platform-select input:checked')].map(x=>x.value);if(!caption){$('#compose-feedback').textContent='Please enter a caption before saving.';return;}let now=Date.now(),old=drafts.find(d=>d.id===editingId);let d={id:editingId||('d'+now),caption,hashtags,platforms,mediaData,mediaName,mediaType:$('#media').files[0]?.type||old?.mediaType||'',createdAt:old?.createdAt||now,updatedAt:now};if(old)drafts=drafts.map(x=>x.id===editingId?d:x);else drafts.unshift(d);store('drafts',drafts);$('#compose-feedback').textContent='Draft saved in this browser.';render();resetForm();}
+$('#save-draft').addEventListener('click',saveDraft);
+$('#publish').addEventListener('click',()=>{let caption=$('#caption').value.trim(),platforms=[...document.querySelectorAll('#platform-select input:checked')].map(x=>x.value);if(!caption){$('#compose-feedback').textContent='Add a caption before preparing a publishing job.';return;}if(!platforms.length){$('#compose-feedback').textContent='Select at least one platform.';return;}alert('Publishing is not connected yet. Your post has NOT been published. Save it as a draft while we configure official platform authorization and APIs.');jobs.unshift({id:'j'+Date.now(),caption,platforms,createdAt:Date.now(),status:'blocked'});store('jobs',jobs);render();});
+$('#cancel-edit').addEventListener('click',resetForm);
+$('#caption').addEventListener('input',updateChecks);
+$('#platform-select').addEventListener('change',updateChecks);
+$('#media').addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;if(!f.type.startsWith('image/')&&!f.type.startsWith('video/')){alert('Please select an image or video file.');e.target.value='';return;}if(f.size>5*1024*1024){alert('Starter version supports previews up to 5 MB. Cloud media storage can be added later.');e.target.value='';return;}mediaName=f.name;let reader=new FileReader();reader.onload=()=>{mediaData=reader.result;$('#media-preview').innerHTML=f.type.startsWith('video/')?`<video controls src="${mediaData}"></video>`:`<img src="${mediaData}" alt="Selected media preview">`;};reader.readAsDataURL(f);});
+document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.page)));
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.go)));
+$('#top-create').addEventListener('click',()=>{resetForm();nav('compose')});
+$('#history-filter').addEventListener('change',render);
+$('#save-settings').addEventListener('click',()=>{store('workspaceName',$('#workspace-name').value.trim());$('#settings-feedback').textContent='Workspace name saved in this browser.'});
+function init(){renderPlatforms();$('#workspace-name').value=load('workspaceName','My PostPilot Workspace');render();updateChecks();}
+init();
+</script>
+</body></html>
