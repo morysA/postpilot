@@ -122,7 +122,7 @@ hr{border:0;border-top:1px solid var(--line)}
       <div class="card"><div class="stat-label">Published</div><div class="stat" id="stat-published">0</div></div>
       <div class="card"><div class="stat-label">Connected accounts</div><div class="stat">0 <span style="font-size:12px;color:#6d778b">of 8</span></div></div>
     </div>
-    <div class="notice"><strong>Setup status:</strong> This starter saves drafts in your browser. Real social account connections and publishing APIs have not been configured. Nothing is published to your social accounts yet.</div>
+    <div class="notice"><strong>Setup status:</strong> Cloud drafts are available after sign-in. Social account connections and publishing APIs are not connected yet, so nothing is published to your social accounts.</div>
     <div class="layout">
       <div class="panel"><div class="panel-head"><div><h2>Recent content</h2><div class="muted">Your latest drafts and publishing activity</div></div><button class="secondary small-btn" data-go="history">View history</button></div><div id="recent-list"></div></div>
       <div class="panel"><h2>Quick start</h2><p class="muted">Create a post once, select your target platforms, and save it as a draft while we set up official integrations.</p><button class="primary" data-go="compose">Create your first post</button><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h2>Supported platform targets</h2><p class="muted">Facebook · Instagram · TikTok · YouTube · WhatsApp Business · LinkedIn · Threads · X</p></div>
@@ -142,14 +142,14 @@ hr{border:0;border-top:1px solid var(--line)}
       <div class="panel"><h2>Post checklist</h2><p class="muted">Before publishing, check that your caption and media suit each platform.</p><div class="row"><div><div class="row-title">Caption</div><div class="row-sub">Write a clear message</div></div><span id="caption-check" class="badge">Needed</span></div><div class="row"><div><div class="row-title">Target platforms</div><div class="row-sub">Select one or more</div></div><span id="platform-check" class="badge">Needed</span></div><div class="row"><div><div class="row-title">Account connections</div><div class="row-sub">Official authorization required</div></div><span class="badge warn">Not connected</span></div><div class="footer-note">WhatsApp Business is treated as a separate messaging workflow, not a public-feed post.</div></div>
     </div>
   </section>
-  <section id="library-page" class="hidden"><div class="panel"><div class="panel-head"><div><h2>Content Library</h2><div class="muted">Saved captions and drafts in this browser</div></div><button class="primary" data-go="compose">＋ New content</button></div><div id="library-list"></div></div></section>
+  <section id="library-page" class="hidden"><div class="panel"><div class="panel-head"><div><h2>Content Library</h2><div class="muted">Saved captions and drafts on this device</div></div><button class="primary" data-go="compose">＋ New content</button></div><div id="library-list"></div></div></section>
   <section id="history-page" class="hidden"><div class="panel"><div class="panel-head"><div><h2>Publishing History</h2><div class="muted">Drafts and attempted publishing workflows</div></div><select id="history-filter" class="secondary"><option value="all">All statuses</option><option value="draft">Drafts</option><option value="blocked">Not connected</option></select></div><div id="history-list"></div></div></section>
   <section id="accounts-page" class="hidden"><div class="panel"><h2>Social account connections</h2><p class="muted">These are platform targets only. No account is connected in this starter build.</p><div class="platform-cards" id="account-cards"></div><div class="footer-note">To activate publishing, we will configure each platform's official developer application, permissions, callback URLs, and secure server-side token storage.</div></div></section>
   <section id="settings-page" class="hidden"><div class="panel"><h2>Workspace settings</h2>
-<div class="notice" id="cloud-status">Cloud connection is not configured yet. Add your Supabase Project URL and Publishable key in the configuration near the top of this file.</div>
+<div class="notice" id="cloud-status">Checking Supabase configuration…</div>
 <div class="field"><label for="auth-email">Email for cloud sign-in</label><input id="auth-email" type="email" placeholder="you@example.com" autocomplete="email"></div>
 <div class="actions"><button class="primary" id="send-login-link">Send sign-in link</button><button class="secondary" id="cloud-sync">Sync drafts to cloud</button></div>
-<p class="footer-note" id="cloud-feedback" aria-live="polite">Cloud sync requires a signed-in user and the Supabase configuration.</p><div class="field" style="margin-top:16px"><label for="workspace-name">Workspace name</label><input id="workspace-name" value="My PostPilot Workspace"></div><button class="primary" id="save-settings">Save settings</button><p class="footer-note" id="settings-feedback">Settings are stored locally in this browser.</p><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h2>Current build limitations</h2><p class="muted">This is a local starter, not a deployed multi-user SaaS. No OAuth, live publishing, cloud database, scheduling worker, or billing is configured.</p></div></section>
+<p class="footer-note" id="cloud-feedback" aria-live="polite">Sign in to sync drafts. Cloud sync stores text fields; media and platform selections are not synced yet.</p><div class="field" style="margin-top:16px"><label for="workspace-name">Workspace name</label><input id="workspace-name" value="My PostPilot Workspace"></div><button class="primary" id="save-settings">Save settings</button><p class="footer-note" id="settings-feedback">Settings are stored locally in this browser.</p><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h2>Current build limitations</h2><p class="muted">Cloud draft sync is available after sign-in. Social OAuth, live publishing, scheduled publishing, media cloud storage, and billing are not configured yet.</p></div></section>
 </main>
 </div>
 <!-- Supabase JS client. Use ONLY the Project URL and Publishable key here.
@@ -203,6 +203,32 @@ document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=
 $('#top-create').addEventListener('click',()=>{resetForm();nav('compose')});
 $('#history-filter').addEventListener('change',render);
 $('#save-settings').addEventListener('click',()=>{store('workspaceName',$('#workspace-name').value.trim());$('#settings-feedback').textContent='Workspace name saved in this browser.';toast('Workspace settings saved.')});
+function setCloudStatus(message, isGood=false){
+  const el = $('#cloud-status');
+  if(!el) return;
+  el.textContent = message;
+  el.style.background = isGood ? '#e3f7ee' : '';
+  el.style.borderColor = isGood ? '#b7e7d0' : '';
+  el.style.color = isGood ? '#116745' : '';
+}
+async function refreshAuthStatus(){
+  if(!supabaseClient){
+    setCloudStatus('Supabase is not configured. Check the Project URL and Publishable key.');
+    return null;
+  }
+  const { data, error } = await supabaseClient.auth.getSession();
+  if(error){
+    setCloudStatus('Could not check sign-in status: ' + error.message);
+    return null;
+  }
+  if(data.session?.user){
+    setCloudStatus('Signed in as ' + (data.session.user.email || 'your account') + '. Cloud draft sync is ready.', true);
+    $('#cloud-feedback').textContent = 'Signed in. You can sync your saved drafts to the cloud.';
+    return data.session.user;
+  }
+  setCloudStatus('Supabase is configured. Sign in with the email link before syncing drafts.');
+  return null;
+}
 async function sendLoginLink(){
   const email = $('#auth-email').value.trim();
   if(!supabaseClient){$('#cloud-feedback').textContent='Add your Supabase Project URL and Publishable key first, then update GitHub Pages.';toast('Supabase setup is not configured yet.');return;}
@@ -214,38 +240,91 @@ async function sendLoginLink(){
   $('#cloud-feedback').textContent = error ? 'Sign-in link error: '+error.message : 'Check your email for a sign-in link. Email delivery and redirect settings must be configured in Supabase.';toast(error ? 'Could not send sign-in link.' : 'Sign-in request submitted. Check your email.');
 }
 async function syncDraftsToCloud(){
-  if(!supabaseClient){$('#cloud-feedback').textContent='Cloud connection is not configured. Add the Project URL and Publishable key first.';return;}
-  const {data:{user}, error:authError} = await supabaseClient.auth.getUser();
-  if(authError || !user){$('#cloud-feedback').textContent='Sign in first using the email sign-in link.';return;}
-  let saved=0, failures=[];
-  for(const d of drafts){
-    const row = {
-      user_id:user.id,
-      title:(d.caption||'').slice(0,100),
-      content:[d.caption||'',d.hashtags||''].filter(Boolean).join('\\n\\n'),
-      status:'draft',
-      updated_at:new Date(d.updatedAt||Date.now()).toISOString()
-    };
-    let result;
-    if(d.cloudId){
-      result = await supabaseClient.from('posts').update(row).eq('id', d.cloudId).select('id').single();
-    } else {
-      result = await supabaseClient.from('posts').insert(row).select('id').single();
-      if(!result.error && result.data?.id){
+  if(!supabaseClient){
+    $('#cloud-feedback').textContent='Cloud connection is not configured. Check the Project URL and Publishable key.';
+    return;
+  }
+  const button = $('#cloud-sync');
+  button.disabled = true;
+  button.textContent = 'Syncing…';
+  $('#cloud-feedback').textContent = 'Checking sign-in and syncing saved drafts…';
+  try{
+    const {data:{user}, error:authError} = await supabaseClient.auth.getUser();
+    if(authError || !user){
+      $('#cloud-feedback').textContent='You are not signed in in this browser. Open a fresh email sign-in link here, then try again.';
+      await refreshAuthStatus();
+      return;
+    }
+    if(!drafts.length){
+      $('#cloud-feedback').textContent='You are signed in, but there are no saved drafts on this device to sync yet.';
+      await refreshAuthStatus();
+      return;
+    }
+    let saved=0, failures=[];
+    for(const d of drafts){
+      const row = {
+        user_id:user.id,
+        title:(d.caption||'Untitled post').slice(0,100),
+        content:[d.caption||'',d.hashtags||''].filter(Boolean).join('\n\n'),
+        status:'draft',
+        updated_at:new Date(d.updatedAt||Date.now()).toISOString()
+      };
+      let result;
+      if(d.cloudId){
+        result = await supabaseClient.from('posts')
+          .update(row)
+          .eq('id', d.cloudId)
+          .eq('user_id', user.id)
+          .select('id')
+          .maybeSingle();
+        // If a previously linked cloud row no longer exists, create a replacement.
+        if(!result.error && !result.data){
+          result = await supabaseClient.from('posts').insert(row).select('id').single();
+        }
+      } else {
+        result = await supabaseClient.from('posts').insert(row).select('id').single();
+      }
+      if(result.error){
+        failures.push(result.error.message);
+      } else if(result.data?.id){
         d.cloudId = result.data.id;
-        store('drafts', drafts);
+        saved++;
+      } else {
+        failures.push('The database did not return a post ID.');
       }
     }
-    if(result.error) failures.push(result.error.message); else saved++;
+    store('drafts', drafts);
+    $('#cloud-feedback').textContent = failures.length
+      ? `Synced or updated ${saved} draft(s); ${failures.length} failed. First error: ${failures[0]}`
+      : `Successfully synced ${saved} draft(s). Repeating sync updates linked cloud drafts instead of creating new copies. Media and selected platforms are not synced yet.`;
+    await refreshAuthStatus();
+  }catch(err){
+    $('#cloud-feedback').textContent='Cloud sync failed: ' + (err?.message || 'Unexpected error. Please try again.');
+  }finally{
+    button.disabled = false;
+    button.textContent = 'Sync drafts to cloud';
   }
-  $('#cloud-feedback').textContent = failures.length
-    ? `Synced ${saved} draft(s); ${failures.length} failed. First error: ${failures[0]}`
-    : `Synced ${saved} draft(s) to the cloud. This first version syncs text only, not media or selected platforms. Avoid syncing the same drafts repeatedly, as duplicates may be created.`;
 }
 $('#send-login-link').addEventListener('click',sendLoginLink);
 $('#cloud-sync').addEventListener('click',syncDraftsToCloud);
-if(supabaseConfigured) $('#cloud-status').textContent='Supabase configuration detected. Sign in before syncing drafts.';
-function init(){renderPlatforms();$('#workspace-name').value=load('workspaceName','My PostPilot Workspace');render();updateChecks();}
+if(supabaseConfigured) setCloudStatus('Supabase configuration detected. Checking sign-in status…');
+if(supabaseClient){
+  supabaseClient.auth.onAuthStateChange((_event, session)=>{
+    if(session?.user){
+      setCloudStatus('Signed in as ' + (session.user.email || 'your account') + '. Cloud draft sync is ready.', true);
+      $('#cloud-feedback').textContent='Sign-in successful. You can now sync your saved drafts.';
+    }else{
+      setCloudStatus('Supabase is configured. Sign in with the email link before syncing drafts.');
+    }
+  });
+}
+function init(){
+  renderPlatforms();
+  $('#workspace-name').value=load('workspaceName','My PostPilot Workspace');
+  render();
+  updateChecks();
+  refreshAuthStatus();
+}
 init();
 </script>
 <div id="toast" role="status" aria-live="polite"></div>
