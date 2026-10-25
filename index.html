@@ -149,7 +149,7 @@ hr{border:0;border-top:1px solid var(--line)}
 <div class="notice" id="cloud-status">Checking Supabase configuration…</div>
 <div class="field"><label for="auth-email">Email for cloud sign-in</label><input id="auth-email" type="email" placeholder="you@example.com" autocomplete="email"></div>
 <div class="actions"><button class="primary" id="send-login-link">Send sign-in link</button><button class="secondary" id="cloud-sync">Sync drafts to cloud</button></div>
-<p class="footer-note" id="cloud-feedback" aria-live="polite">Sign in to sync drafts. Cloud sync stores text fields; media and platform selections are not synced yet.</p><div class="field" style="margin-top:16px"><label for="workspace-name">Workspace name</label><input id="workspace-name" value="My PostPilot Workspace"></div><button class="primary" id="save-settings">Save settings</button><p class="footer-note" id="settings-feedback">Settings are stored locally in this browser.</p><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h2>Current build limitations</h2><p class="muted">Cloud draft sync is available after sign-in. Social OAuth, live publishing, scheduled publishing, media cloud storage, and billing are not configured yet.</p></div></section>
+<p class="footer-note" id="cloud-feedback" aria-live="polite">Sign in to sync drafts. Cloud media and platform sync require the database columns described in the setup steps.</p><div class="field" style="margin-top:16px"><label for="workspace-name">Workspace name</label><input id="workspace-name" value="My PostPilot Workspace"></div><button class="primary" id="save-settings">Save settings</button><p class="footer-note" id="settings-feedback">Settings are stored locally in this browser.</p><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h2>Current build limitations</h2><p class="muted">Cloud draft sync is available after sign-in. Social OAuth, live publishing, scheduled publishing, media cloud storage, and billing are not configured yet.</p></div></section>
 </main>
 </div>
 <!-- Supabase JS client. Use ONLY the Project URL and Publishable key here.
@@ -180,24 +180,36 @@ let toastTimer;
 function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 const load = (k, d) => {try{return JSON.parse(localStorage.getItem('postpilot_'+k)) ?? d}catch{return d}};
 const store = (k,v) => localStorage.setItem('postpilot_'+k,JSON.stringify(v));
-let drafts=load('drafts',[]), jobs=load('jobs',[]), mediaData='', mediaName='', editingId=null;
+let drafts=load('drafts',[]), jobs=load('jobs',[]), mediaData='', mediaName='', mediaPath='', editingId=null;
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function dateLabel(d){return new Date(d).toLocaleString();}
 function nav(page){const target=$('#'+page+'-page');if(!target){toast('That section is not available yet.');return;}document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));target.classList.remove('hidden');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));const names={dashboard:['Overview','Your content workflow, all in one place.'],compose:['Create Post','Compose once and prepare content for selected platforms.'],library:['Content Library','Reuse your saved content.'],history:['Publishing History','Review drafts and publishing workflow status.'],accounts:['Connected Accounts','Manage platform integrations.'],settings:['Settings','Configure your workspace.']};$('#page-title').textContent=names[page][0];$('#page-subtitle').textContent=names[page][1];render();}
 function renderPlatforms(){ $('#platform-select').innerHTML=PLATFORMS.map(p=>`<label class="platform"><input type="checkbox" value="${p.id}"><span><strong>${p.name}</strong><small>${p.desc}</small></span></label>`).join(''); $('#account-cards').innerHTML=PLATFORMS.map(p=>`<div class="platform-card"><strong>${p.icon} &nbsp; ${p.name}</strong><span>${p.desc}</span><div style="margin-top:10px"><span class="badge warn">Not connected</span></div></div>`).join('');}
-function resetForm(){editingId=null;$('#caption').value='';$('#hashtags').value='';$('#media').value='';mediaData='';mediaName='';$('#media-preview').textContent='Media preview will appear here';document.querySelectorAll('#platform-select input').forEach(x=>x.checked=false);$('#cancel-edit').classList.add('hidden');$('#compose-feedback').textContent='';updateChecks();}
+function resetForm(){editingId=null;$('#caption').value='';$('#hashtags').value='';$('#media').value='';mediaData='';mediaName='';mediaPath='';$('#media-preview').textContent='Media preview will appear here';document.querySelectorAll('#platform-select input').forEach(x=>x.checked=false);$('#cancel-edit').classList.add('hidden');$('#compose-feedback').textContent='';updateChecks();}
 function updateChecks(){let cap=$('#caption').value.trim();let selected=[...document.querySelectorAll('#platform-select input:checked')];$('#caption-check').textContent=cap?'Ready':'Needed';$('#caption-check').className='badge '+(cap?'good':'');$('#platform-check').textContent=selected.length?selected.length+' selected':'Needed';$('#platform-check').className='badge '+(selected.length?'good':'');}
-function editDraft(id){let d=drafts.find(x=>x.id===id);if(!d)return;nav('compose');editingId=id;$('#caption').value=d.caption;$('#hashtags').value=d.hashtags||'';mediaData=d.mediaData||'';mediaName=d.mediaName||'';$('#media-preview').innerHTML=mediaData?(d.mediaType?.startsWith('video')?`<video controls src="${mediaData}"></video>`:`<img src="${mediaData}" alt="Selected media preview">`):'Media preview will appear here';document.querySelectorAll('#platform-select input').forEach(x=>x.checked=(d.platforms||[]).includes(x.value));$('#cancel-edit').classList.remove('hidden');updateChecks();}
+async function editDraft(id){
+  let d=drafts.find(x=>x.id===id);if(!d)return;
+  nav('compose');editingId=id;$('#caption').value=d.caption;$('#hashtags').value=d.hashtags||'';
+  mediaData=d.mediaData||'';mediaName=d.mediaName||'';mediaPath=d.mediaPath||'';
+  let previewUrl=mediaData;
+  if(!previewUrl && mediaPath && supabaseClient){
+    const {data}=await supabaseClient.storage.from('postpilot-media').createSignedUrl(mediaPath,3600);
+    previewUrl=data?.signedUrl||'';
+  }
+  $('#media-preview').innerHTML=previewUrl?(d.mediaType?.startsWith('video')?`<video controls src="${previewUrl}"></video>`:`<img src="${previewUrl}" alt="Selected media preview">`):(mediaPath?'Cloud media attached (preview unavailable)':'Media preview will appear here');
+  document.querySelectorAll('#platform-select input').forEach(x=>x.checked=(d.platforms||[]).includes(x.value));
+  $('#cancel-edit').classList.remove('hidden');updateChecks();
+}
 function deleteDraft(id){if(!confirm('Delete this draft?'))return;drafts=drafts.filter(d=>d.id!==id);store('drafts',drafts);render();}
 function contentRow(d){let platforms=(d.platforms||[]).map(id=>PLATFORMS.find(p=>p.id===id)?.name||id).join(', ')||'No platforms selected';return `<div class="row"><div style="min-width:0"><div class="row-title">${esc((d.caption||'Untitled post').slice(0,85))}</div><div class="row-sub">${esc(platforms)} · ${dateLabel(d.updatedAt||d.createdAt)}</div></div><div style="display:flex;gap:6px;flex-shrink:0"><button class="secondary small-btn" onclick="editDraft('${d.id}')">Edit</button><button class="danger small-btn" onclick="deleteDraft('${d.id}')">Delete</button></div></div>`}
 function render(){ $('#stat-drafts').textContent=drafts.length;$('#stat-jobs').textContent=jobs.length;$('#stat-published').textContent=0;let recent=[...drafts].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,5);$('#recent-list').innerHTML=recent.length?recent.map(contentRow).join(''):'<div class="empty">No content yet. Create a post to get started.</div>';$('#library-list').innerHTML=drafts.length?drafts.map(contentRow).join(''):'<div class="empty">Your saved content will appear here.</div>';let f=$('#history-filter')?.value||'all';let all=[...drafts.map(d=>({...d,status:'draft'})),...jobs.map(j=>({...j,status:'blocked'}))].filter(x=>f==='all'||x.status===f);$('#history-list').innerHTML=all.length?all.map(x=>`<div class="row"><div><div class="row-title">${esc((x.caption||'Publishing job').slice(0,90))}</div><div class="row-sub">${esc((x.platforms||[]).map(id=>PLATFORMS.find(p=>p.id===id)?.name||id).join(', '))} · ${dateLabel(x.updatedAt||x.createdAt)}</div></div><span class="badge ${x.status==='draft'?'':'warn'}">${x.status==='draft'?'Draft':'Not connected'}</span></div>`).join(''):'<div class="empty">Nothing to show for this filter.</div>';}
-function saveDraft(){let caption=$('#caption').value.trim(),hashtags=$('#hashtags').value.trim(),platforms=[...document.querySelectorAll('#platform-select input:checked')].map(x=>x.value);if(!caption){$('#compose-feedback').textContent='Please enter a caption before saving.';return;}let now=Date.now(),old=drafts.find(d=>d.id===editingId);let d={id:editingId||('d'+now),caption,hashtags,platforms,mediaData,mediaName,mediaType:$('#media').files[0]?.type||old?.mediaType||'',createdAt:old?.createdAt||now,updatedAt:now};if(old)drafts=drafts.map(x=>x.id===editingId?d:x);else drafts.unshift(d);store('drafts',drafts);$('#compose-feedback').textContent='Draft saved in this browser.';toast('Draft saved on this device.');render();resetForm();}
+function saveDraft(){let caption=$('#caption').value.trim(),hashtags=$('#hashtags').value.trim(),platforms=[...document.querySelectorAll('#platform-select input:checked')].map(x=>x.value);if(!caption){$('#compose-feedback').textContent='Please enter a caption before saving.';return;}let now=Date.now(),old=drafts.find(d=>d.id===editingId);let d={id:editingId||('d'+now),caption,hashtags,platforms,mediaData,mediaName,mediaPath:mediaPath||old?.mediaPath||'',mediaType:$('#media').files[0]?.type||old?.mediaType||'',cloudId:old?.cloudId,createdAt:old?.createdAt||now,updatedAt:now};if(old)drafts=drafts.map(x=>x.id===editingId?d:x);else drafts.unshift(d);store('drafts',drafts);$('#compose-feedback').textContent='Draft saved in this browser.';toast('Draft saved on this device.');render();resetForm();}
 $('#save-draft').addEventListener('click',saveDraft);
 $('#publish').addEventListener('click',()=>{let caption=$('#caption').value.trim(),platforms=[...document.querySelectorAll('#platform-select input:checked')].map(x=>x.value);if(!caption){$('#compose-feedback').textContent='Add a caption before preparing a publishing job.';return;}if(!platforms.length){$('#compose-feedback').textContent='Select at least one platform.';return;}toast('Publishing is not connected yet. Your post has NOT been published.');jobs.unshift({id:'j'+Date.now(),caption,platforms,createdAt:Date.now(),status:'blocked'});store('jobs',jobs);render();});
 $('#cancel-edit').addEventListener('click',resetForm);
 $('#caption').addEventListener('input',updateChecks);
 $('#platform-select').addEventListener('change',updateChecks);
-$('#media').addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;if(!f.type.startsWith('image/')&&!f.type.startsWith('video/')){alert('Please select an image or video file.');e.target.value='';return;}if(f.size>5*1024*1024){alert('Starter version supports previews up to 5 MB. Cloud media storage can be added later.');e.target.value='';return;}mediaName=f.name;let reader=new FileReader();reader.onload=()=>{mediaData=reader.result;$('#media-preview').innerHTML=f.type.startsWith('video/')?`<video controls src="${mediaData}"></video>`:`<img src="${mediaData}" alt="Selected media preview">`;};reader.readAsDataURL(f);});
+$('#media').addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;if(!f.type.startsWith('image/')&&!f.type.startsWith('video/')){alert('Please select an image or video file.');e.target.value='';return;}if(f.size>5*1024*1024){alert('Starter version supports previews up to 5 MB. Cloud media storage can be added later.');e.target.value='';return;}mediaName=f.name;mediaPath='';let reader=new FileReader();reader.onload=()=>{mediaData=reader.result;$('#media-preview').innerHTML=f.type.startsWith('video/')?`<video controls src="${mediaData}"></video>`:`<img src="${mediaData}" alt="Selected media preview">`;};reader.readAsDataURL(f);});
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.page)));
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.go)));
 $('#top-create').addEventListener('click',()=>{resetForm();nav('compose')});
@@ -244,66 +256,110 @@ async function syncDraftsToCloud(){
     $('#cloud-feedback').textContent='Cloud connection is not configured. Check the Project URL and Publishable key.';
     return;
   }
-  const button = $('#cloud-sync');
-  button.disabled = true;
-  button.textContent = 'Syncing…';
-  $('#cloud-feedback').textContent = 'Checking sign-in and syncing saved drafts…';
+  const button=$('#cloud-sync');
+  button.disabled=true;button.textContent='Syncing…';
+  $('#cloud-feedback').textContent='Checking sign-in and syncing drafts and media…';
   try{
-    const {data:{user}, error:authError} = await supabaseClient.auth.getUser();
-    if(authError || !user){
+    const {data:{user},error:authError}=await supabaseClient.auth.getUser();
+    if(authError||!user){
       $('#cloud-feedback').textContent='You are not signed in in this browser. Open a fresh email sign-in link here, then try again.';
-      await refreshAuthStatus();
-      return;
+      await refreshAuthStatus();return;
     }
     if(!drafts.length){
       $('#cloud-feedback').textContent='You are signed in, but there are no saved drafts on this device to sync yet.';
-      await refreshAuthStatus();
-      return;
+      await refreshAuthStatus();return;
     }
-    let saved=0, failures=[];
+    let saved=0,failures=[];
     for(const d of drafts){
-      const row = {
+      let mediaPathForRow=d.mediaPath||null;
+      if(d.mediaData && d.mediaName){
+        const safeName=d.mediaName.replace(/[^a-zA-Z0-9._-]/g,'_');
+        const objectPath=`${user.id}/${d.id}/${Date.now()}_${safeName}`;
+        const response=await fetch(d.mediaData);
+        const blob=await response.blob();
+        const {data:uploadData,error:uploadError}=await supabaseClient.storage
+          .from('postpilot-media')
+          .upload(objectPath,blob,{contentType:d.mediaType||blob.type||'application/octet-stream',upsert:true});
+        if(uploadError){failures.push(`${d.caption.slice(0,35)||'Draft'}: media upload failed — ${uploadError.message}`);continue;}
+        mediaPathForRow=uploadData?.path||objectPath;
+        d.mediaPath=mediaPathForRow;
+        d.mediaData=''; // avoid keeping a large data URL after successful upload
+      }
+      const row={
         user_id:user.id,
         title:(d.caption||'Untitled post').slice(0,100),
         content:[d.caption||'',d.hashtags||''].filter(Boolean).join('\n\n'),
         status:'draft',
+        platform_targets:d.platforms||[],
+        media_path:mediaPathForRow,
+        media_name:d.mediaName||null,
+        media_type:d.mediaType||null,
         updated_at:new Date(d.updatedAt||Date.now()).toISOString()
       };
       let result;
       if(d.cloudId){
-        result = await supabaseClient.from('posts')
-          .update(row)
-          .eq('id', d.cloudId)
-          .eq('user_id', user.id)
-          .select('id')
-          .maybeSingle();
-        // If a previously linked cloud row no longer exists, create a replacement.
-        if(!result.error && !result.data){
-          result = await supabaseClient.from('posts').insert(row).select('id').single();
+        result=await supabaseClient.from('posts').update(row)
+          .eq('id',d.cloudId).eq('user_id',user.id).select('id').maybeSingle();
+        if(!result.error&&!result.data){
+          result=await supabaseClient.from('posts').insert(row).select('id').single();
         }
-      } else {
-        result = await supabaseClient.from('posts').insert(row).select('id').single();
+      }else{
+        result=await supabaseClient.from('posts').insert(row).select('id').single();
       }
       if(result.error){
-        failures.push(result.error.message);
-      } else if(result.data?.id){
-        d.cloudId = result.data.id;
-        saved++;
-      } else {
+        failures.push(`${d.caption.slice(0,35)||'Draft'}: ${result.error.message}`);
+      }else if(result.data?.id){
+        d.cloudId=result.data.id;saved++;
+      }else{
         failures.push('The database did not return a post ID.');
       }
     }
-    store('drafts', drafts);
-    $('#cloud-feedback').textContent = failures.length
+    store('drafts',drafts);
+    $('#cloud-feedback').textContent=failures.length
       ? `Synced or updated ${saved} draft(s); ${failures.length} failed. First error: ${failures[0]}`
-      : `Successfully synced ${saved} draft(s). Repeating sync updates linked cloud drafts instead of creating new copies. Media and selected platforms are not synced yet.`;
+      : `Successfully synced ${saved} draft(s), including platform selections and any attached media.`;
     await refreshAuthStatus();
   }catch(err){
-    $('#cloud-feedback').textContent='Cloud sync failed: ' + (err?.message || 'Unexpected error. Please try again.');
+    $('#cloud-feedback').textContent='Cloud sync failed: '+(err?.message||'Unexpected error. Please try again.');
   }finally{
-    button.disabled = false;
-    button.textContent = 'Sync drafts to cloud';
+    button.disabled=false;button.textContent='Sync drafts to cloud';
   }
+}
+async function loadCloudDrafts(){
+  if(!supabaseClient)return;
+  const {data:{user},error:authError}=await supabaseClient.auth.getUser();
+  if(authError||!user)return;
+  const {data,error}=await supabaseClient.from('posts')
+    .select('id,title,content,status,platform_targets,media_path,media_name,media_type,created_at,updated_at')
+    .eq('user_id',user.id).eq('status','draft').order('updated_at',{ascending:false});
+  if(error){
+    $('#cloud-feedback').textContent='Signed in, but cloud drafts could not be loaded: '+error.message+' (check that the new posts columns exist).';
+    return;
+  }
+  const localByCloudId=new Map(drafts.filter(d=>d.cloudId).map(d=>[d.cloudId,d]));
+  const cloudDrafts=(data||[]).map(row=>{
+    const existing=localByCloudId.get(row.id);
+    const pieces=(row.content||'').split('\n\n');
+    const caption=pieces.shift()||row.title||'';
+    return {
+      ...(existing||{}),
+      id:existing?.id||('cloud-'+row.id),
+      cloudId:row.id,
+      caption,
+      hashtags:pieces.join('\n\n'),
+      platforms:row.platform_targets||[],
+      mediaPath:row.media_path||'',
+      mediaName:row.media_name||'',
+      mediaType:row.media_type||'',
+      mediaData:existing?.mediaData||'',
+      createdAt:existing?.createdAt||Date.parse(row.created_at||row.updated_at||Date.now()),
+      updatedAt:Date.parse(row.updated_at||Date.now())
+    };
+  });
+  const cloudIds=new Set(cloudDrafts.map(d=>d.cloudId));
+  const unsynced=drafts.filter(d=>!d.cloudId||!cloudIds.has(d.cloudId));
+  drafts=[...cloudDrafts,...unsynced];
+  store('drafts',drafts);render();
 }
 $('#send-login-link').addEventListener('click',sendLoginLink);
 $('#cloud-sync').addEventListener('click',syncDraftsToCloud);
@@ -312,7 +368,8 @@ if(supabaseClient){
   supabaseClient.auth.onAuthStateChange((_event, session)=>{
     if(session?.user){
       setCloudStatus('Signed in as ' + (session.user.email || 'your account') + '. Cloud draft sync is ready.', true);
-      $('#cloud-feedback').textContent='Sign-in successful. You can now sync your saved drafts.';
+      $('#cloud-feedback').textContent='Sign-in successful. Loading your cloud drafts…';
+      setTimeout(()=>loadCloudDrafts(),0);
     }else{
       setCloudStatus('Supabase is configured. Sign in with the email link before syncing drafts.');
     }
@@ -323,7 +380,7 @@ function init(){
   $('#workspace-name').value=load('workspaceName','My PostPilot Workspace');
   render();
   updateChecks();
-  refreshAuthStatus();
+  refreshAuthStatus().then(user=>{if(user)loadCloudDrafts();});
 }
 init();
 </script>
